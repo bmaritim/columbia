@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Capital Stack Modeler — Value-Add Acquisitions</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --surface2: #f0efe9;
+      --border: rgba(0,0,0,0.10);
+      --border-strong: rgba(0,0,0,0.18);
+      --text: #1a1a18;
+      --text2: #5a5a54;
+      --text3: #9a9a90;
+      --senior: #2057a7;
+      --mezz: #b86e10;
+      --equity: #1f6e3a;
+      --senior-light: #dce8f7;
+      --mezz-light: #fdeac8;
+      --equity-light: #d4eddb;
+      --green: #1f6e3a;
+      --amber: #b86e10;
+      --red: #a02020;
+      --radius: 10px;
+      --radius-lg: 14px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 0.5px solid var(--border-strong);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+
+    .logo span {
+      color: var(--text3);
+      font-weight: 400;
+    }
+
+    .header-badge {
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--surface2);
+      border: 0.5px solid var(--border);
+      border-radius: 20px;
+      padding: 3px 10px;
+      color: var(--text2);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 0;
+      min-height: calc(100vh - 56px);
+    }
+
+    .sidebar {
+      background: var(--surface);
+      border-right: 0.5px solid var(--border-strong);
+      padding: 1.5rem;
+      overflow-y: auto;
+      height: calc(100vh - 56px);
+      position: sticky;
+      top: 56px;
+    }
+
+    .main {
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 10px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .input-group {
+      margin-bottom: 10px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 11px;
+      color: var(--text2);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 0.5px solid var(--border-strong);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-family: 'DM Mono', monospace;
+      background: var(--surface2);
+      color: var(--text);
+      transition: border-color 0.15s;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--senior);
+      background: var(--surface);
+    }
+
+    .input-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .tier-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 0.5px solid var(--border);
+    }
+
+    .tier-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .tier-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .scenario-strip {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 1rem;
+    }
+
+    .scenario-btn {
+      flex: 1;
+      padding: 7px 4px;
+      border: 0.5px solid var(--border-strong);
+      border-radius: var(--radius);
+      background: transparent;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text2);
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+    }
+
+    .scenario-btn:hover { background: var(--surface2); color: var(--text); }
+
+    .scenario-btn.active {
+      background: var(--text);
+      color: #fff;
+      border-color: var(--text);
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 1.25rem;
+    }
+
+    .metric-card {
+      background: var(--surface2);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+    }
+
+    .metric-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 4px;
+    }
+
+    .metric-value {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .metric-sub {
+      font-size: 10px;
+      color: var(--text3);
+      margin-top: 2px;
+    }
+
+    .waterfall-wrap {
+      margin-bottom: 1.25rem;
+    }
+
+    .waterfall-bar {
+      display: flex;
+      height: 44px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 10px;
+      background: var(--surface2);
+    }
+
+    .wf-seg {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      transition: width 0.35s ease;
+      overflow: hidden;
+      white-space: nowrap;
+      padding: 0 6px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text2);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .divider {
+      border: none;
+      border-top: 0.5px solid var(--border);
+      margin: 1.25rem 0;
+    }
+
+    .returns-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .returns-table th {
+      text-align: left;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text3);
+      padding: 6px 10px;
+      border-bottom: 0.5px solid var(--border-strong);
+    }
+
+    .returns-table td {
+      padding: 10px 10px;
+      border-bottom: 0.5px solid var(--border);
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .returns-table tr:last-child td { border-bottom: none; }
+    .returns-table tr:hover td { background: var(--surface2); }
+
+    .tier-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-weight: 500;
+    }
+
+    .warning {
+      font-size: 11px;
+      color: var(--red);
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #fdf0f0;
+      border-radius: var(--radius);
+      border: 0.5px solid #f0c0c0;
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-size: 11px;
+      color: var(--text2);
+      margin-bottom: 10px;
+    }
+
+    .chart-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .chart-legend-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+
+    .irr-good { color: var(--green); }
+    .irr-ok { color: var(--amber); }
+    .irr-bad { color: var(--red); }
+
+    footer {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text3);
+      padding: 1.5rem;
+      border-top: 0.5px solid var(--border);
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; border-right: none; border-bottom: 0.5px solid var(--border-strong); }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Capital Stack <span>/ Value-Add Modeler</span></div>
+  <div class="header-badge">Real Estate Finance Tool</div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR: INPUTS -->
+  <aside class="sidebar">
+
+    <div class="section-label" style="margin-bottom:10px">Scenario presets</div>
+    <div class="scenario-strip">
+      <button class="scenario-btn active" onclick="loadScenario('base', this)">Base case</button>
+      <button class="scenario-btn" onclick="loadScenario('heavy', this)">Heavy leverage</button>
+      <button class="scenario-btn" onclick="loadScenario('equity', this)">All equity</button>
+    </div>
+
+    <div style="margin-bottom:1.25rem">
+      <div class="section-label">Deal inputs</div>
+      <div class="input-group"><label>Purchase price ($)</label><input type="number" id="purchasePrice" value="10000000" step="100000" oninput="calc()"></div>
+      <div class="input-2col">
+        <div class="input-group"><label>Reno budget ($)</label><input type="number" id="renoBudget" value="1500000" step="50000" oninput="calc()"></div>
+        <div class="input-group"><label>Hold period (yrs)</label><input type="number" id="holdPeriod" value="5" step="1" min="1" max="30" oninput="calc()"></div>
+      </div>
+      <div class="input-2col">
+        <div class="input-group"><label>In-place NOI ($/yr)</label><input type="number" id="inplaceNoi" value="600000" step="10000" oninput="calc()"></div>
+        <div class="input-group"><label>Stabilized NOI ($/yr)</label><input type="number" id="noi" value="950000" step="10000" oninput="calc()"></div>
+      </div>
+      <div class="input-2col">
+        <div class="input-group"><label>Exit cap rate (%)</label><input type="number" id="exitCap" value="5.5" step="0.25" min="0.1" oninput="calc()"></div>
+        <div class="input-group"><label>Entry cap rate (%)</label><input type="number" id="entryCap" value="5.2" step="0.25" min="0.1" oninput="calc()"></div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:1.25rem">
+      <div class="tier-header"><div class="tier-dot" style="background:var(--senior)"></div><span class="tier-title">Senior debt</span></div>
+      <div class="input-2col">
+        <div class="input-group"><label>LTV (%)</label><input type="number" id="seniorLTV" value="65" min="0" max="85" step="1" oninput="calc()"></div>
+        <div class="input-group"><label>Interest rate (%)</label><input type="number" id="seniorRate" value="6.5" step="0.25" oninput="calc()"></div>
+      </div>
+      <div class="input-2col">
+        <div class="input-group"><label>IO period (yrs)</label><input type="number" id="seniorIO" value="3" step="1" min="0" oninput="calc()"></div>
+        <div class="input-group"><label>Amort. period (yrs)</label><input type="number" id="seniorAmort" value="30" step="1" min="10" oninput="calc()"></div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:1.25rem">
+      <div class="tier-header"><div class="tier-dot" style="background:var(--mezz)"></div><span class="tier-title">Mezzanine / pref equity</span></div>
+      <div class="input-2col">
+        <div class="input-group"><label>Amount ($)</label><input type="number" id="mezzAmount" value="1500000" step="100000" oninput="calc()"></div>
+        <div class="input-group"><label>Coupon rate (%)</label><input type="number" id="mezzRate" value="12" step="0.5" oninput="calc()"></div>
+      </div>
+      <div class="input-2col">
+        <div class="input-group"><label>PIK portion (%)</label><input type="number" id="mezzPIK" value="0" step="5" min="0" max="100" oninput="calc()"></div>
+        <div class="input-group"><label>Origination fee (%)</label><input type="number" id="mezzFee" value="1" step="0.25" oninput="calc()"></div>
+      </div>
+    </div>
+
+    <div id="ltcWarning" class="warning" style="display:none">⚠ Total debt exceeds 90% of total cost — review your stack</div>
+
+  </aside>
+
+  <!-- MAIN: OUTPUTS -->
+  <main class="main">
+
+    <div class="card">
+      <div class="section-label">Deal summary</div>
+      <div class="metrics-grid" id="summaryMetrics"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Exit proceeds waterfall</div>
+      <div class="waterfall-wrap">
+        <div class="waterfall-bar" id="waterfallBar"></div>
+        <div class="legend" id="waterfallLegend"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Returns by tranche</div>
+      <table class="returns-table">
+        <thead>
+          <tr>
+            <th>Tranche</th>
+            <th>Invested</th>
+            <th>Total proceeds</th>
+            <th>IRR</th>
+            <th>Multiple</th>
+            <th>Cash-on-cash</th>
+          </tr>
+        </thead>
+        <tbody id="returnsBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Annual cash flows</div>
+      <div class="chart-legend" id="cfLegend">
+        <span class="chart-legend-item"><span class="chart-legend-swatch" style="background:var(--equity-light);border:1px solid var(--equity)"></span>Equity cash flow</span>
+        <span class="chart-legend-item"><span class="chart-legend-swatch" style="background:var(--mezz-light);border:1px solid var(--mezz)"></span>Mezz debt service</span>
+        <span class="chart-legend-item"><span class="chart-legend-swatch" style="background:var(--senior-light);border:1px solid var(--senior)"></span>Senior debt service</span>
+      </div>
+      <div style="position:relative;width:100%;height:260px;">
+        <canvas id="cfChart" role="img" aria-label="Stacked bar chart of annual cash flows by tranche over the hold period">Annual cash flow chart</canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">NOI ramp to stabilization</div>
+      <div style="position:relative;width:100%;height:180px;">
+        <canvas id="noiChart" role="img" aria-label="Line chart of NOI ramping from in-place to stabilized over the hold period">NOI ramp chart</canvas>
+      </div>
+    </div>
+
+    <footer>Built with Claude · Capital Stack Modeler · For illustrative purposes only — not financial advice</footer>
+
+  </main>
+</div>
+
+<script>
+let cfChartInst = null;
+let noiChartInst = null;
+
+function v(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function fmtM(val) { return '$' + (val / 1e6).toFixed(2) + 'M'; }
+function fmtPct(val) { return (val * 100).toFixed(1) + '%'; }
+function fmtMult(val) { return val.toFixed(2) + 'x'; }
+
+function npvIRR(cashflows) {
+  let lo = -0.9999, hi = 10;
+  for (let i = 0; i < 200; i++) {
+    const mid = (lo + hi) / 2;
+    const npv = cashflows.reduce((s, c, t) => s + c / Math.pow(1 + mid, t), 0);
+    if (Math.abs(npv) < 0.01) return mid;
+    npv > 0 ? (lo = mid) : (hi = mid);
+  }
+  return (lo + hi) / 2;
+}
+
+function calcSeniorPayments(principal, rate, ioYears, amortYears, holdPeriod) {
+  if (principal <= 0) return Array(holdPeriod).fill({ interest: 0, principal: 0, balance: 0 });
+  const mr = rate / 100 / 12;
+  const nm = amortYears * 12;
+  const monthly = principal * (mr * Math.pow(1 + mr, nm)) / (Math.pow(1 + mr, nm) - 1);
+  const annualAmort = monthly * 12;
+  const ioAnnual = principal * (rate / 100);
+  let balance = principal;
+  return Array.from({ length: holdPeriod }, (_, i) => {
+    const y = i + 1;
+    if (y <= ioYears) {
+      return { interest: ioAnnual, principal: 0, balance };
+    } else {
+      const interest = balance * (rate / 100);
+      const prinPaid = Math.max(0, annualAmort - interest);
+      balance = Math.max(0, balance - prinPaid);
+      return { interest, principal: prinPaid, balance };
+    }
+  });
+}
+
+function calc() {
+  const pp = v('purchasePrice');
+  const reno = v('renoBudget');
+  const noi = v('noi');
+  const inNoi = v('inplaceNoi');
+  const exitCap = v('exitCap') / 100;
+  const entryCap = v('entryCap') / 100;
+  const hold = Math.max(1, Math.round(v('holdPeriod')));
+  const ltv = v('seniorLTV') / 100;
+  const seniorRatePct = v('seniorRate');
+  const ioYears = v('seniorIO');
+  const amortYears = v('seniorAmort');
+  const mezzAmt = v('mezzAmount');
+  const mezzRate = v('mezzRate') / 100;
+  const mezzPIK = v('mezzPIK') / 100;
+  const mezzFee = v('mezzFee') / 100;
+
+  const totalCost = pp + reno;
+  const seniorDebt = pp * ltv;
+  const totalDebt = seniorDebt + mezzAmt;
+  const equityIn = Math.max(0, totalCost - totalDebt);
+  const exitValue = noi / exitCap;
+  const ltc = totalDebt / totalCost;
+
+  document.getElementById('ltcWarning').style.display = ltc > 0.90 ? 'block' : 'none';
+
+  const seniorPayments = calcSeniorPayments(seniorDebt, seniorRatePct, ioYears, amortYears, hold);
+  const lastSeniorBal = seniorPayments[hold - 1].balance;
+
+  let mezzBal = mezzAmt * (1 + mezzFee);
+  const mezzCashFlows = [];
+  for (let y = 0; y < hold; y++) {
+    const cashPay = mezzBal * mezzRate * (1 - mezzPIK);
+    mezzBal *= (1 + mezzRate * mezzPIK);
+    mezzCashFlows.push(cashPay);
+  }
+  const mezzRepayment = mezzBal;
+
+  const annualNOI = Array.from({ length: hold }, (_, i) => {
+    const t = hold <= 1 ? 1 : Math.min((i / (hold - 1)) * 1.5, 1);
+    return inNoi + (noi - inNoi) * t;
+  });
+
+  const equityCFs = Array.from({ length: hold }, (_, i) => {
+    const gross = annualNOI[i];
+    const svc = seniorPayments[i].interest + seniorPayments[i].principal;
+    const msvc = mezzCashFlows[i];
+    return gross - svc - msvc;
+  });
+
+  const netExitEquity = exitValue - lastSeniorBal - mezzRepayment;
+  const totalEquityProceeds = equityCFs.reduce((a, b) => a + b, 0) + netExitEquity;
+
+  const eqAllCFs = [-equityIn, ...equityCFs.slice(0, hold - 1), equityCFs[hold - 1] + netExitEquity];
+  const equityIRR = equityIn > 0 ? npvIRR(eqAllCFs) : 0;
+  const equityMult = equityIn > 0 ? totalEquityProceeds / equityIn : 0;
+  const avgAnnualEq = equityCFs.slice(0, Math.max(1, hold - 1)).reduce((a, b) => a + b, 0) / Math.max(hold - 1, 1);
+  const equityCOC = equityIn > 0 ? avgAnnualEq / equityIn : 0;
+
+  const mezzTotalProceeds = mezzCashFlows.reduce((a, b) => a + b, 0) + mezzRepayment;
+  const mezzAllCFs = mezzAmt > 0 ? [-mezzAmt, ...mezzCashFlows.slice(0, hold - 1), mezzCashFlows[hold - 1] + mezzRepayment] : [0];
+  const mezzIRR = mezzAmt > 0 ? npvIRR(mezzAllCFs) : 0;
+  const mezzMult = mezzAmt > 0 ? mezzTotalProceeds / mezzAmt : 0;
+  const avgMezzCash = mezzCashFlows.slice(0, Math.max(1, hold - 1)).reduce((a, b) => a + b, 0) / Math.max(hold - 1, 1);
+  const mezzCOC = mezzAmt > 0 ? avgMezzCash / mezzAmt : 0;
+
+  const seniorInterestTotal = seniorPayments.reduce((s, p) => s + p.interest, 0);
+  const seniorTotal = seniorInterestTotal + seniorDebt;
+  const seniorIRR = seniorRatePct / 100;
+  const seniorMult = seniorDebt > 0 ? seniorTotal / seniorDebt : 0;
+  const seniorCOC = seniorRatePct / 100;
+
+  const irrClass = (irr) => irr > 0.15 ? 'irr-good' : irr > 0.08 ? 'irr-ok' : 'irr-bad';
+
+  document.getElementById('summaryMetrics').innerHTML = `
+    <div class="metric-card"><div class="metric-label">Total cost</div><div class="metric-value">${fmtM(totalCost)}</div><div class="metric-sub">Purchase + reno</div></div>
+    <div class="metric-card"><div class="metric-label">Exit value</div><div class="metric-value">${fmtM(exitValue)}</div><div class="metric-sub">At ${v('exitCap')}% exit cap</div></div>
+    <div class="metric-card"><div class="metric-label">Value-add spread</div><div class="metric-value" style="color:${(exitValue - totalCost) > 0 ? 'var(--green)' : 'var(--red)'}">${fmtM(exitValue - totalCost)}</div><div class="metric-sub">Exit minus total cost</div></div>
+    <div class="metric-card"><div class="metric-label">Equity invested</div><div class="metric-value">${fmtM(equityIn)}</div><div class="metric-sub">LTC: ${(ltc * 100).toFixed(0)}%</div></div>
+    <div class="metric-card"><div class="metric-label">Equity IRR</div><div class="metric-value ${irrClass(equityIRR)}">${fmtPct(equityIRR)}</div><div class="metric-sub">${hold}-yr unlevered</div></div>
+    <div class="metric-card"><div class="metric-label">Equity multiple</div><div class="metric-value">${fmtMult(equityMult)}</div><div class="metric-sub">On invested equity</div></div>
+  `;
+
+  const wfSegs = [
+    { label: 'Senior', amount: lastSeniorBal, color: '#2057a7' },
+    { label: 'Mezz', amount: mezzRepayment, color: '#b86e10' },
+    { label: 'Equity', amount: Math.max(0, netExitEquity), color: '#1f6e3a' },
+  ];
+  const totalExit = exitValue;
+  document.getElementById('waterfallBar').innerHTML = wfSegs.map(s => {
+    const pct = Math.max(0, (s.amount / totalExit) * 100);
+    return `<div class="wf-seg" style="width:${pct.toFixed(1)}%;background:${s.color};">${pct > 7 ? fmtM(s.amount) : ''}</div>`;
+  }).join('');
+  document.getElementById('waterfallLegend').innerHTML = wfSegs.map(s =>
+    `<span class="legend-item"><span class="legend-dot" style="background:${s.color}"></span>${s.label}: ${fmtM(s.amount)} (${((s.amount / totalExit) * 100).toFixed(1)}%)</span>`
+  ).join('');
+
+  const rows = [
+    { name: 'Senior debt', color: '#2057a7', amountIn: seniorDebt, proceeds: seniorTotal, irr: seniorIRR, mult: seniorMult, coc: seniorCOC },
+    { name: 'Mezz / pref equity', color: '#b86e10', amountIn: mezzAmt, proceeds: mezzTotalProceeds, irr: mezzIRR, mult: mezzMult, coc: mezzCOC },
+    { name: 'Common equity', color: '#1f6e3a', amountIn: equityIn, proceeds: totalEquityProceeds, irr: equityIRR, mult: equityMult, coc: equityCOC },
+  ];
+  document.getElementById('returnsBody').innerHTML = rows.map(r => `
+    <tr>
+      <td><span class="tier-badge"><span style="width:10px;height:10px;border-radius:2px;background:${r.color};display:inline-block;flex-shrink:0;"></span>${r.name}</span></td>
+      <td style="font-family:'DM Mono',monospace;">${fmtM(r.amountIn)}</td>
+      <td style="font-family:'DM Mono',monospace;">${fmtM(r.proceeds)}</td>
+      <td style="font-family:'DM Mono',monospace;" class="${irrClass(r.irr)}">${fmtPct(r.irr)}</td>
+      <td style="font-family:'DM Mono',monospace;">${fmtMult(r.mult)}</td>
+      <td style="font-family:'DM Mono',monospace;">${fmtPct(r.coc)}</td>
+    </tr>`).join('');
+
+  const labels = Array.from({ length: hold }, (_, i) => 'Y' + (i + 1));
+  const seniorSvcArr = seniorPayments.map(p => -(p.interest + p.principal));
+  const mezzSvcArr = mezzCashFlows.map(c => -c);
+
+  if (cfChartInst) cfChartInst.destroy();
+  cfChartInst = new Chart(document.getElementById('cfChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Equity cash flow', data: equityCFs, backgroundColor: '#d4eddb', borderColor: '#1f6e3a', borderWidth: 1 },
+        { label: 'Mezz service', data: mezzSvcArr, backgroundColor: '#fdeac8', borderColor: '#b86e10', borderWidth: 1 },
+        { label: 'Senior service', data: seniorSvcArr, backgroundColor: '#dce8f7', borderColor: '#2057a7', borderWidth: 1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + fmtM(ctx.parsed.y) } } },
+      scales: {
+        x: { stacked: true, ticks: { autoSkip: false, font: { family: 'DM Sans', size: 11 } }, grid: { display: false } },
+        y: { stacked: true, ticks: { callback: v => fmtM(v), font: { family: 'DM Mono', size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+      }
+    }
+  });
+
+  if (noiChartInst) noiChartInst.destroy();
+  noiChartInst = new Chart(document.getElementById('noiChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Annual NOI', data: annualNOI, borderColor: '#2057a7', backgroundColor: 'rgba(32,87,167,0.08)', fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#2057a7' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => 'NOI: ' + fmtM(ctx.parsed.y) } } },
+      scales: {
+        x: { ticks: { autoSkip: false, font: { family: 'DM Sans', size: 11 } }, grid: { display: false } },
+        y: { ticks: { callback: v => fmtM(v), font: { family: 'DM Mono', size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+      }
+    }
+  });
+}
+
+function loadScenario(name, btn) {
+  document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const s = {
+    base:   { purchasePrice: 10000000, renoBudget: 1500000, noi: 950000, inplaceNoi: 600000, exitCap: 5.5, entryCap: 5.2, holdPeriod: 5, seniorLTV: 65, seniorRate: 6.5, seniorIO: 3, seniorAmort: 30, mezzAmount: 1500000, mezzRate: 12, mezzPIK: 0,  mezzFee: 1   },
+    heavy:  { purchasePrice: 10000000, renoBudget: 1500000, noi: 950000, inplaceNoi: 600000, exitCap: 5.5, entryCap: 5.2, holdPeriod: 5, seniorLTV: 70, seniorRate: 7.0, seniorIO: 2, seniorAmort: 30, mezzAmount: 2500000, mezzRate: 14, mezzPIK: 50, mezzFee: 2   },
+    equity: { purchasePrice: 10000000, renoBudget: 1500000, noi: 950000, inplaceNoi: 600000, exitCap: 5.5, entryCap: 5.2, holdPeriod: 5, seniorLTV: 0,  seniorRate: 0,   seniorIO: 0, seniorAmort: 30, mezzAmount: 0,       mezzRate: 0,  mezzPIK: 0,  mezzFee: 0   },
+  }[name];
+  Object.entries(s).forEach(([k, val]) => { const el = document.getElementById(k); if (el) el.value = val; });
+  calc();
+}
+
+calc();
+</script>
+</body>
+</html>
